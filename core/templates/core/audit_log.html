@@ -1,0 +1,25 @@
+{% extends 'core/base.html' %}
+{% block content %}
+<div class="card">
+    <div class="eyebrow">Audit Trail</div>
+    <h2 style="margin:0.35rem 0 1rem;">Every payment decision, fully traceable</h2>
+    {% for tx in transactions %}
+        <div class="activity-row">
+            <div>
+                <strong>{{ tx.timestamp|date:"d M Y, h:i A" }}</strong>
+                <div style="margin-top:0.35rem;">{{ tx.sender.username }} -> {{ tx.counterparty_name }} | Rs.{{ tx.amount }}</div>
+                <div style="margin-top:0.35rem; color:var(--text-light);">Decision: {{ tx.decision }} | Status: {{ tx.status }}</div>
+                {% if tx.explanations %}
+                    <div style="margin-top:0.35rem; color:var(--text-light);">{{ tx.explanations|join:" | " }}</div>
+                {% endif %}
+            </div>
+            <div style="text-align:right;">
+                <div class="trust-badge trust-{{ tx.risk_level|lower }}">{{ tx.risk_level }}</div>
+                <div style="margin-top:0.35rem; color:var(--text-light);">Trust {{ tx.trust_score }}/100</div>
+            </div>
+        </div>
+    {% empty %}
+        <p style="color:var(--text-light);">No transactions logged yet.</p>
+    {% endfor %}
+</div>
+{% endblock %}

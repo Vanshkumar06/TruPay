@@ -1,0 +1,147 @@
+{% extends 'core/base.html' %}
+{% block body_class %}login-page{% endblock %}
+{% block content %}
+<div class="card">
+    <div class="auth-brand">
+        <a href="{% url 'landing' %}" class="brand-link" aria-label="TruPay landing page">
+            {% load static %}
+            <img src="{% static 'icons/trupay-logo.png' %}" alt="TruPay logo" class="brand-logo">
+            <span class="brand-wordmark">
+                <strong>TruPay</strong>
+                <span>Trusted UPI Sandbox</span>
+            </span>
+        </a>
+    </div>
+    <div class="eyebrow">Secure Login</div>
+    <h2 style="margin:0.35rem 0 1rem; text-align:center;">Log in to TruPay</h2>
+    <p style="text-align:center; color:var(--text-light); margin-bottom:1.25rem;">Zero-cost authentication with password protection and optional authenticator-app verification.</p>
+    <form method="post" action="{% url 'login' %}">
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+            <div class="alert" style="background: #fee2e2; color: #991b1b; border-radius: 8px; padding: 1rem; margin-bottom: 1rem;">
+                {% for error in form.non_field_errors %}
+                    <div>{{ error }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+        
+        <div style="margin-bottom: 1rem;">
+            <label for="id_username" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--text-main);">Username</label>
+            <input type="text" name="username" id="id_username" class="form-control" placeholder="Enter username" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" required style="font-size: 16px;">
+            {% if form.username.errors %}
+                <div style="background: #fee2e2; color: #991b1b; margin-top: 0.25rem; padding: 0.5rem; border-radius: 6px; font-size: 0.9rem;">
+                    {{ form.username.errors.0 }}
+                </div>
+            {% endif %}
+        </div>
+        
+        <div style="margin-bottom: 1.5rem;">
+            <label for="id_password" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--text-main);">Password</label>
+            <input type="password" name="password" id="id_password" class="form-control" placeholder="Enter password" autocomplete="current-password" autocapitalize="none" autocorrect="off" spellcheck="false" required style="font-size: 16px;">
+            {% if form.password.errors %}
+                <div style="background: #fee2e2; color: #991b1b; margin-top: 0.25rem; padding: 0.5rem; border-radius: 6px; font-size: 0.9rem;">
+                    {{ form.password.errors.0 }}
+                </div>
+            {% endif %}
+        </div>
+        
+        <button type="submit" id="login-btn" style="width:100%; font-size: 1.05rem; padding: 1.2rem; background: var(--accent); color: white; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; -webkit-appearance: none; appearance: none;">Log In</button>
+    </form>
+    <p style="margin:1rem 0 0; text-align:center; color:var(--text-light);">Need an account? <a href="{% url 'signup' %}">Create one</a></p>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    const btn = document.getElementById('login-btn');
+    
+    console.log('Login page loaded');
+    console.log('Form found:', !!form);
+    console.log('Button found:', !!btn);
+    console.log('Current URL:', window.location.href);
+    
+    // Test network connectivity
+    fetch(window.location.origin + '/login/', { method: 'HEAD' })
+        .then(response => console.log('Network test: OK, status', response.status))
+        .catch(error => console.log('Network test: FAILED', error));
+    
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault(); // Prevent default form submission
+            
+            console.log('Form submit event triggered');
+            const username = document.getElementById('id_username').value;
+            const password = document.getElementById('id_password').value;
+            console.log('Username:', username ? 'filled' : 'empty');
+            console.log('Password:', password ? 'filled' : 'empty');
+            
+            if (!username || !password) {
+                alert('Please enter both username and password');
+                return false;
+            }
+            
+            console.log('Submitting form via fetch...');
+            btn.disabled = true;
+            btn.textContent = 'Logging in...';
+            
+            // Get CSRF token
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            
+            // Submit via fetch
+            fetch(window.location.href, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': csrfToken
+                },
+                body: new URLSearchParams({
+                    'username': username,
+                    'password': password,
+                    'csrfmiddlewaretoken': csrfToken
+                })
+            })
+            .then(response => {
+                console.log('Fetch response status:', response.status);
+                console.log('Response redirected:', response.redirected);
+                if (response.redirected) {
+                    console.log('Redirect URL:', response.url);
+                    window.location.href = response.url;
+                } else {
+                    return response.text();
+                }
+            })
+            .then(text => {
+                if (text) {
+                    console.log('Response text length:', text.length);
+                    // If we get here, there might be an error - check if it's a login error
+                    if (text.includes('non_field_errors') || text.includes('error')) {
+                        console.log('Login failed - resetting form');
+                        btn.disabled = false;
+                        btn.textContent = 'Log In';
+                        alert('Login failed. Please check your credentials.');
+                    } else {
+                        // Success - redirect manually
+                        console.log('Login successful - redirecting to dashboard');
+                        window.location.href = '/app/';
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Fetch error:', error);
+                btn.disabled = false;
+                btn.textContent = 'Log In (Error)';
+                alert('Network error. Please try again.');
+            });
+            
+            return false;
+        });
+    }
+    
+    if (btn) {
+        btn.addEventListener('click', function(e) {
+            console.log('Button clicked - form will submit via fetch');
+        });
+    }
+});
+</script>
+{% endblock %}

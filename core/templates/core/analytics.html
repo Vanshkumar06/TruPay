@@ -1,0 +1,131 @@
+{% extends 'core/base.html' %}
+{% block content %}
+<div style="display:grid; gap:1.5rem;">
+    <div class="card">
+        <div style="display:flex; justify-content:space-between; gap:1rem; align-items:flex-start; flex-wrap:wrap;">
+            <div>
+                <div class="eyebrow">Insights</div>
+                <h2 style="margin:0.35rem 0 0.6rem;">Trust, spending, and past activity summaries</h2>
+                <p style="margin:0; color:var(--text-light); max-width:760px;">Use this page to understand how dependable recent payments look, how your monthly habits are changing, and how often you stayed inside budget.</p>
+            </div>
+            <button type="button" class="btn btn-outline" onclick="openModal('trustHelpModal')" style="min-width:180px;">What does trust score mean?</button>
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:1rem; margin-top:1.25rem;">
+            <div class="soft-panel" style="margin-top:0;">
+                <strong>Average trust</strong>
+                <div style="font-size:1.9rem; margin-top:0.4rem;">{{ avg_trust_score }}/100</div>
+            </div>
+            <div class="soft-panel" style="margin-top:0;">
+                <strong>High trust</strong>
+                <div style="font-size:1.9rem; margin-top:0.4rem;">{{ risk_counts.low }}</div>
+            </div>
+            <div class="soft-panel" style="margin-top:0;">
+                <strong>Review needed</strong>
+                <div style="font-size:1.9rem; margin-top:0.4rem;">{{ risk_counts.medium }}</div>
+            </div>
+            <div class="soft-panel" style="margin-top:0;">
+                <strong>Low trust</strong>
+                <div style="font-size:1.9rem; margin-top:0.4rem;">{{ risk_counts.high }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns:minmax(0, 1.25fr) minmax(320px, 0.95fr); gap:1.5rem;">
+        <div class="card">
+            <div class="eyebrow">Monthly Activity</div>
+            <h3 style="margin:0.35rem 0 1rem;">Past six months at a glance</h3>
+            <div style="display:grid; gap:0.9rem;">
+                {% for month in monthly_summary %}
+                    <div class="soft-panel" style="margin-top:0;">
+                        <div style="display:flex; justify-content:space-between; gap:1rem; align-items:center; flex-wrap:wrap;">
+                            <strong>{{ month.label }}</strong>
+                            <span class="mini-tag">{% if month.on_budget %}Stayed on budget{% else %}Went over budget{% endif %}</span>
+                        </div>
+                        <div style="margin-top:0.75rem;">
+                            <div style="display:flex; justify-content:space-between; gap:1rem; font-size:0.92rem; color:var(--text-light);">
+                                <span>Spent Rs.{{ month.spent }}</span>
+                                <span>{{ month.transaction_count }} payment{{ month.transaction_count|pluralize }}</span>
+                            </div>
+                            <div class="progress-bg" style="height:10px; margin-top:0.55rem;"><div class="progress-fill" style="width: {{ month.bar_width }}%;"></div></div>
+                            <div style="display:flex; justify-content:space-between; gap:1rem; margin-top:0.5rem; font-size:0.88rem; color:var(--text-light);">
+                                <span>Average trust: {{ month.avg_trust }}/100</span>
+                                <span>{% if month.on_budget %}Budget win{% else %}Needs attention{% endif %}</span>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:1.5rem;">
+            <div class="card">
+                <div class="eyebrow">Budget Record</div>
+                <h3 style="margin:0.35rem 0 1rem;">Summary of recent discipline</h3>
+                <div class="soft-panel" style="margin-top:0;">
+                    <strong>{{ budget_success_months }}</strong> month{{ budget_success_months|pluralize }} stayed inside your current budget target.
+                </div>
+                <div class="soft-panel">
+                    <strong>{{ trusted_months }}</strong> month{{ trusted_months|pluralize }} finished with an average trust score of 70 or higher.
+                </div>
+                <div class="soft-panel">
+                    <strong>{{ blocked_count }}</strong> payment{{ blocked_count|pluralize }} were blocked or held back by trust checks.
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="eyebrow">Spend Breakdown</div>
+                <h3 style="margin:0.35rem 0 1rem;">Top categories</h3>
+                {% for item in category_breakdown %}
+                    <div style="margin-bottom:1rem;">
+                        <div style="display:flex; justify-content:space-between; gap:1rem;">
+                            <strong>{{ item.category }}</strong>
+                            <span>Rs.{{ item.amount }}</span>
+                        </div>
+                        <div class="progress-bg"><div class="progress-fill" style="width: {{ item.share }}%;"></div></div>
+                        <div style="color:var(--text-light); font-size:0.9rem;">{{ item.share }}% of visible spend</div>
+                    </div>
+                {% empty %}
+                    <p style="color:var(--text-light);">No outgoing transactions yet.</p>
+                {% endfor %}
+            </div>
+
+            <div class="card">
+                <div class="eyebrow">Advisory Engine</div>
+                <h3 style="margin:0.35rem 0 1rem;">Recommended next moves</h3>
+                {% for card in advisory_cards %}
+                    <div class="soft-panel" style="margin-top:0; margin-bottom:0.75rem;">{{ card }}</div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="trustHelpModal" class="modal">
+    <div class="modal-content" style="max-width:520px; text-align:left;">
+        <h3 style="margin-top:0;">How TruPay trust score works</h3>
+        <p style="color:var(--text-light);">The trust score is a confidence signal for a payment. Higher scores mean the payment looks more familiar and consistent with your recent behavior.</p>
+        <div class="soft-panel" style="margin-top:0;">
+            <strong>85-100</strong>
+            <div style="margin-top:0.35rem; color:var(--text-light);">Looks normal for your account, amount, location, and spending rhythm.</div>
+        </div>
+        <div class="soft-panel">
+            <strong>70-84</strong>
+            <div style="margin-top:0.35rem; color:var(--text-light);">Generally comfortable, with one lighter caution signal that is worth noticing.</div>
+        </div>
+        <div class="soft-panel">
+            <strong>45-69</strong>
+            <div style="margin-top:0.35rem; color:var(--text-light);">Mostly fine, but something is a little unusual, like a new payee, unusual amount, or different device.</div>
+        </div>
+        <div class="soft-panel">
+            <strong>1-44</strong>
+            <div style="margin-top:0.35rem; color:var(--text-light);">The payment has multiple warning signals, so TruPay asks for more care before continuing.</div>
+        </div>
+        <button type="button" class="btn" onclick="closeModal('trustHelpModal')" style="width:100%; margin-top:1rem;">Close</button>
+    </div>
+</div>
+
+<script>
+    function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+</script>
+{% endblock %}

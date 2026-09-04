@@ -1,0 +1,165 @@
+{% extends 'core/base.html' %}
+{% block content %}
+<div class="responsive-grid responsive-cols-3" style="margin-bottom:1.5rem;">
+    <div class="card" style="margin-bottom:0;">
+        <div class="eyebrow">Wallet</div>
+        <div id="balance-display" style="font-size:2rem; font-weight:800; margin:0.5rem 0 0.4rem;">Rs. * * * *</div>
+        <button onclick="openModal('balanceModal')" class="btn btn-outline" style="padding:0.55rem 1rem;">View balance</button>
+    </div>
+    <div class="card" style="margin-bottom:0;">
+        <div class="eyebrow">Budget</div>
+        <h3 style="margin:0.35rem 0 0.6rem;">Rs.{{ profile.budget_remaining }} left</h3>
+        <div class="progress-bg"><div class="progress-fill" style="width: {{ profile.budget_progress }}%;"></div></div>
+        <p style="margin:0.75rem 0 0; color:var(--text-light);">Spent Rs.{{ profile.spent_this_cycle }} of Rs.{{ profile.monthly_budget }}</p>
+        <p style="margin:0.45rem 0 0; color:var(--text-light); font-size:0.92rem;">{{ profile.get_budget_cycle_display }} cycle | Reset in {{ cycle_days_left }} day{{ cycle_days_left|pluralize }}</p>
+        {% if profile.monthly_budget <= 0 %}
+            <div class="soft-panel" style="margin-top:0.85rem; color:var(--danger);">
+                Set your budget in <a href="{% url 'profile' %}" style="color:var(--danger); font-weight:700;">Profile</a> before making transfers.
+            </div>
+        {% endif %}
+    </div>
+    <div class="card" style="margin-bottom:0;">
+        <div class="eyebrow">Smart Savings</div>
+        <h3 style="margin:0.35rem 0 0.6rem;">Rs.{{ profile.savings_balance }}</h3>
+    </div>
+    <div class="card" style="margin-bottom:0; display:flex; flex-direction:column; gap:0.75rem;">
+        <div class="eyebrow">Quick Actions</div>
+        {% if profile.monthly_budget > 0 %}
+            <a href="{% url 'send_money' %}" style="display:inline-flex; align-items:center; justify-content:center; padding:0.5rem 1rem; background:transparent; color:var(--accent); border:1.5px solid var(--accent); border-radius:8px; text-decoration:none; font-weight:600; font-size:0.9rem;">Transfer</a>
+        {% else %}
+            <a href="{% url 'profile' %}" style="display:inline-flex; align-items:center; justify-content:center; padding:0.5rem 1rem; background:#fff1f1; color:var(--danger); border:1.5px solid #f2b8bb; border-radius:8px; text-decoration:none; font-weight:600; font-size:0.9rem;">Set Budget to Transfer</a>
+        {% endif %}
+        <a href="{% url 'goals' %}" style="display:inline-flex; align-items:center; justify-content:center; padding:0.5rem 1rem; background:transparent; color:var(--accent); border:1.5px solid var(--accent); border-radius:8px; text-decoration:none; font-weight:600; font-size:0.9rem;">Goals</a>
+        <a href="{% url 'analytics' %}" style="display:inline-flex; align-items:center; justify-content:center; padding:0.5rem 1rem; background:transparent; color:var(--accent); border:1.5px solid var(--accent); border-radius:8px; text-decoration:none; font-weight:600; font-size:0.9rem;">Insights</a>
+        <a href="{% url 'profile' %}" style="display:inline-flex; align-items:center; justify-content:center; padding:0.5rem 1rem; background:transparent; color:var(--accent); border:1.5px solid var(--accent); border-radius:8px; text-decoration:none; font-weight:600; font-size:0.9rem;">Profile</a>
+    </div>
+</div>
+
+<div class="responsive-grid responsive-cols-2" style="gap:1.5rem;">
+    <div style="display:flex; flex-direction:column; gap:1.5rem;">
+        <div class="card">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:1rem;">
+                <div>
+                    <div class="eyebrow">Recent Activity</div>
+                    <h3 style="margin:0.35rem 0 0;">Audit-ready transaction feed</h3>
+                </div>
+                <a href="{% url 'send_money' %}" class="btn">New Payment</a>
+            </div>
+            <div style="margin-top:1rem;">
+                {% for tx in transactions|slice:":3" %}
+                    <div class="activity-row">
+                        <div>
+                            <div style="display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap;">
+                                <strong>{% if tx.sender == user %}Sent to {{ tx.counterparty_name }}{% else %}Received from {{ tx.sender.username }}{% endif %}</strong>
+                                <span class="trust-badge trust-{{ tx.risk_level|lower }}">{{ tx.risk_level }}</span>
+                                <span class="mini-tag">{{ tx.payment_method }}</span>
+                                <span class="mini-tag">{{ tx.merchant_category|title }}</span>
+                            </div>
+                            <div style="margin-top:0.35rem; color:var(--text-light); font-size:0.92rem;">{{ tx.timestamp|date:"d M Y, h:i A" }} | {{ tx.decision }}</div>
+                        </div>
+                        <div style="text-align:right;">
+                            <div style="font-size:1.1rem; font-weight:700; color:{% if tx.sender == user %}var(--text-main){% else %}var(--success){% endif %};">
+                                {% if tx.sender == user %}-{% else %}+{% endif %}Rs.{{ tx.amount }}
+                            </div>
+                            <div style="color:var(--text-light); font-size:0.85rem;">Trust {{ tx.trust_score }}/100</div>
+                        </div>
+                    </div>
+                {% empty %}
+                    <p style="color:var(--text-light); text-align:center; padding:2rem 0;">No recent transactions yet.</p>
+                {% endfor %}
+                {% if transactions|length > 3 %}
+                    <div style="margin-top:1.5rem; text-align:center;">
+                        <a href="{% url 'audit_log' %}" style="color:var(--accent); font-weight:600; text-decoration:none;">View all transactions →</a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:1.5rem;">
+        <div class="card">
+            <div class="eyebrow">Upcoming Goals</div>
+            <h3 style="margin:0.35rem 0 1rem;">Your top savings targets</h3>
+            {% for item in goal_projection|slice:":3" %}
+                <div class="soft-panel" style="margin-bottom:0.75rem;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; gap:0.75rem;">
+                        <strong style="flex:1; word-break:break-word;">{{ item.goal.title }}</strong>
+                        <span style="color:var(--accent); font-weight:700;">{{ item.goal.progress_percentage }}%</span>
+                    </div>
+                    <div class="progress-bg"><div class="progress-fill" style="width: {{ item.goal.progress_percentage }}%;"></div></div>
+                    <p style="margin:0.45rem 0 0; color:var(--text-light); font-size:0.9rem;">Saved Rs.{{ item.goal.saved_amount }} / Rs.{{ item.goal.target_amount }}</p>
+                </div>
+            {% empty %}
+                <p style="color:var(--text-light); font-size:0.92rem;">Create a goal to see targets here. <a href="{% url 'goals' %}" style="color:var(--accent);">Go to Goals →</a></p>
+            {% endfor %}
+        </div>
+
+        <div class="card">
+            <div class="eyebrow">Smart Advice</div>
+            <h3 style="margin:0.35rem 0 1rem;">Personalized recommendations</h3>
+            {% for card in advisory_cards %}
+                <div class="soft-panel" style="margin-bottom:0.65rem; font-size:0.92rem;">{{ card }}</div>
+            {% endfor %}
+        </div>
+    </div>
+
+    </div>
+</div>
+
+<div id="balanceModal" class="modal">
+    <div class="modal-content">
+        <h3 style="margin-top:0;">Enter TruPay PIN</h3>
+        <p style="font-size:0.9rem; color:var(--text-light);">Enter your 4-digit TruPay PIN to refresh the current wallet balance.</p>
+        <input type="password" id="upi_pin" maxlength="4" placeholder="••••" class="form-control" style="text-align:center; letter-spacing:8px; font-size:1.4rem;">
+        <button onclick="fetchBalance()" class="btn" style="width:100%; margin-bottom:0.5rem;">View Balance</button>
+        <button onclick="closeModal('balanceModal')" class="btn btn-outline" style="width:100%;">Cancel</button>
+    </div>
+</div>
+
+<div id="goalModal" class="modal">
+    <div class="modal-content">
+        <h3 style="margin-top:0;">Create a Savings Goal</h3>
+        <form action="{% url 'create_goal' %}" method="POST">
+            {% csrf_token %}
+            <input type="text" name="title" class="form-control" placeholder="Goal name (e.g. Emergency Fund)" required>
+            <input type="number" name="target_amount" class="form-control" placeholder="Target amount (Rs.)" required>
+            <input type="date" name="target_date" class="form-control">
+            <select name="priority" class="form-control">
+                <option value="high">High Priority</option>
+                <option value="medium" selected>Medium Priority</option>
+                <option value="low">Low Priority</option>
+            </select>
+            <button type="submit" class="btn" style="width:100%; margin-bottom:0.5rem;">Create</button>
+            <button type="button" onclick="closeModal('goalModal')" class="btn btn-outline" style="width:100%;">Cancel</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+    function closeModal(id) {
+        document.getElementById(id).style.display = 'none';
+        if (id === 'balanceModal') document.getElementById('upi_pin').value = '';
+    }
+
+    function fetchBalance() {
+        const pin = document.getElementById('upi_pin').value;
+        const formData = new FormData();
+        formData.append('password', pin);
+        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+        fetch("{% url 'check_balance' %}", { method: 'POST', body: formData })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('balance-display').innerText = 'Rs. ' + data.balance;
+                    closeModal('balanceModal');
+                } else {
+                    alert(data.error);
+                }
+            });
+    }
+
+</script>
+{% endblock %}

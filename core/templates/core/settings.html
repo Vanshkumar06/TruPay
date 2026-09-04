@@ -1,0 +1,98 @@
+{% extends 'core/base.html' %}
+{% block content %}
+<div style="display:grid; grid-template-columns:minmax(0, 1fr) minmax(320px, 0.9fr); gap:1.5rem;">
+    <div style="display:flex; flex-direction:column; gap:1.5rem;">
+        <div class="card">
+            <div class="eyebrow">Profile</div>
+            <h2 style="margin:0.35rem 0 0.75rem;">Account and spending settings</h2>
+            <p style="color:var(--text-light); margin:0 0 1.25rem;">Manage the details that control transfers, security, and your budget cycle.</p>
+            <form method="POST" style="margin-bottom:1rem;">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="account">
+                <h3 style="margin:0 0 0.85rem;">Account details</h3>
+                {{ account_form.as_p }}
+                <button type="submit" class="btn btn-outline">Save Account</button>
+            </form>
+
+            <form method="POST">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="profile">
+                <h3 style="margin:0 0 0.85rem;">Budget and security</h3>
+                {{ form.as_p }}
+                <button type="submit" class="btn">Save Profile Settings</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <div class="eyebrow">Security</div>
+            <h3 style="margin:0.35rem 0 1rem;">2FA and backup access</h3>
+            {% if profile.totp_enabled %}
+                <div class="soft-panel" style="margin-top:0;">Authenticator app is active for this account.</div>
+                <form method="POST" style="margin-top:1rem;">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="disable_2fa">
+                    <button type="submit" class="btn btn-outline">Disable 2FA</button>
+                </form>
+                <form method="POST" style="margin-top:0.75rem;">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="refresh_backup_codes">
+                    <button type="submit" class="btn btn-outline">Generate New Backup Codes</button>
+                </form>
+            {% elif pending_totp_secret %}
+                <div class="soft-panel" style="margin-top:0;">
+                    <strong>Setup secret:</strong> <span style="word-break:break-all;">{{ otp_secret }}</span>
+                </div>
+                <p style="color:var(--text-light); margin:1rem 0 0.75rem;">Add this secret to your authenticator app and confirm with the current 6-digit code.</p>
+                <form method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="confirm_2fa">
+                    <input type="text" name="totp_code" class="form-control" placeholder="Enter 6-digit code" maxlength="12" required>
+                    <button type="submit" class="btn">Confirm 2FA</button>
+                </form>
+            {% else %}
+                <p style="color:var(--text-light); margin:0 0 1rem;">Enable an authenticator app for safer login approvals and one-time backup codes.</p>
+                <form method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="start_2fa">
+                    <button type="submit" class="btn">Enable 2FA</button>
+                </form>
+            {% endif %}
+
+            {% if backup_codes %}
+                <div class="soft-panel">
+                    <strong>Backup codes</strong>
+                    <div style="margin-top:0.65rem; display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:0.5rem;">
+                        {% for code in backup_codes %}
+                            <div class="mini-tag" style="justify-content:center; padding:0.55rem 0.75rem;">{{ code }}</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:1.5rem;">
+        <div class="card">
+            <div class="eyebrow">Profile summary</div>
+            <h3 style="margin:0.35rem 0 1rem;">Your TruPay details</h3>
+            <div class="soft-panel" style="margin:0;">Name: {{ user.get_full_name|default:user.username }}</div>
+            <div class="soft-panel">Email: {{ user.email|default:"Not added yet" }}</div>
+            <div class="soft-panel">Home city: {{ profile.home_city }}</div>
+            <div class="soft-panel">Budget cycle: {{ profile.get_budget_cycle_display }}</div>
+            <div class="soft-panel">Budget amount: Rs.{{ profile.monthly_budget }}</div>
+            <div class="soft-panel">Budget remaining: Rs.{{ profile.budget_remaining }}</div>
+            <div class="soft-panel">UPI ID: {{ profile.upi_id }}</div>
+            <div class="soft-panel">2FA: {% if profile.totp_enabled %}Enabled{% else %}Disabled{% endif %}</div>
+        </div>
+
+        <div class="card">
+            <div class="eyebrow">Budget guide</div>
+            <h3 style="margin:0.35rem 0 1rem;">What belongs here</h3>
+            <div class="soft-panel" style="margin-top:0;">Set a budget amount before your first transfer.</div>
+            <div class="soft-panel">Choose a weekly, monthly, quarterly, or 6-month budget cycle.</div>
+            <div class="soft-panel">Change your 4-digit TruPay PIN whenever needed.</div>
+            <div class="soft-panel">Keep your email and city current for smoother account management.</div>
+        </div>
+    </div>
+</div>
+{% endblock %}

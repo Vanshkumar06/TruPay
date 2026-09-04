@@ -1,0 +1,33 @@
+{% extends 'core/base.html' %}
+{% block body_class %}login-page{% endblock %}
+{% block content %}
+<div class="card">
+    <div class="auth-brand">
+        <a href="{% url 'landing' %}" class="brand-link" aria-label="TruPay landing page">
+            {% load static %}
+            <img src="{% static 'icons/trupay-logo.png' %}" alt="TruPay logo" class="brand-logo">
+            <span class="brand-wordmark">
+                <strong>TruPay</strong>
+                <span>Trusted UPI Sandbox</span>
+            </span>
+        </a>
+    </div>
+    <div class="eyebrow">New Account</div>
+    <h2 style="margin:0.35rem 0 1rem; text-align:center;">Create TruPay Account</h2>
+    <p style="text-align:center; color:var(--text-light); margin-bottom:1.25rem;">Use a strong password and a 4-digit TruPay PIN. You can enable authenticator-based 2FA later in settings.</p>
+    <form method="post" action="{% url 'signup' %}">
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+            <div class="alert" style="background: #fee2e2; color: #991b1b; border-radius: 8px; padding: 1rem; margin-bottom: 1rem;">
+                {% for error in form.non_field_errors %}
+                    <div>{{ error }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+        
+        {{ form.as_p }}
+        
+        <button type="submit" class="btn" style="width:100%; font-size: 1rem; padding: 1rem; cursor: pointer;">Sign Up</button>
+    </form>
+</div>
+{% endblock %}

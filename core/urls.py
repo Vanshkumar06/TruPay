@@ -1,0 +1,30 @@
+from django.urls import path
+from . import views
+
+urlpatterns = [
+    path('', views.landing_page, name='landing'),
+    path('app/', views.dashboard, name='dashboard'),
+    path('analytics/', views.analytics, name='analytics'),
+    path('goals/', views.goals, name='goals'),
+    path('transparency/', views.transparency, name='transparency'),
+    path('audit/', views.audit_log, name='audit_log'),
+    path('profile/', views.settings_view, name='profile'),
+    path('settings/', views.settings_view, name='settings'),
+    path('api/demo/overview/', views.demo_overview_api, name='demo_overview_api'),
+    path('api/me/summary/', views.user_summary_api, name='user_summary_api'),
+    path('signup/', views.signup, name='signup'),
+    path('login/', views.login_view, name='login'),
+    path('logout/', views.logout_view, name='logout'),
+    path('verify-2fa/', views.verify_2fa_view, name='verify_2fa'),
+    path('send/', views.send_money, name='send_money'),
+    path('send/analyze/', views.analyze_payment, name='analyze_payment'),
+    path('check-balance/', views.check_balance, name='check_balance'),
+    path('create-goal/', views.create_goal, name='create_goal'),
+    path('fund-goal/<int:goal_id>/', views.fund_goal, name='fund_goal'),
+    path('invite-goal/<int:goal_id>/', views.invite_goal_contributor, name='invite_goal_contributor'),
+    path('goal-invite/<int:invite_id>/accept/', views.accept_goal_invite, name='accept_goal_invite'),
+    path('goal-invite/<int:invite_id>/decline/', views.decline_goal_invite, name='decline_goal_invite'),
+    path('break-goal/<int:goal_id>/', views.break_piggy_bank, name='break_goal'),
+    path('confirm-roundup/', views.confirm_roundup, name='confirm_roundup'),
+    path('allocate-surplus/', views.allocate_surplus, name='allocate_surplus'),
+]

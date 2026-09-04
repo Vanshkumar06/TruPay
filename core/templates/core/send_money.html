@@ -1,0 +1,294 @@
+{% extends 'core/base.html' %}
+{% block content %}
+<div class="responsive-grid responsive-transfer" style="gap: 1.5rem;">
+    <div class="card">
+        <div style="display:flex; justify-content:space-between; gap:1rem; align-items:flex-start; margin-bottom:1.5rem;">
+            <div>
+                <h2 style="margin:0;">UPI Transfer</h2>
+                <p style="color:var(--text-light); margin:0.5rem 0 0;">Fill the transfer details and TruPay will estimate payment trust in real time, then explain what is helping or lowering confidence.</p>
+            </div>
+            <div class="trust-badge trust-low">Adaptive trust guide</div>
+        </div>
+
+        <form method="POST" id="payment-form">
+            {% csrf_token %}
+            <input type="hidden" name="risk_acknowledged" id="risk_acknowledged" value="">
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+                <div>
+                    <label>{{ form.receiver_username.label }}</label>
+                    {{ form.receiver_username }}
+                </div>
+                <div>
+                    <label>{{ form.amount.label }}</label>
+                    {{ form.amount }}
+                </div>
+                <div>
+                    <label>{{ form.merchant_category.label }}</label>
+                    {{ form.merchant_category }}
+                </div>
+                <div>
+                    <label>{{ form.payment_method.label }}</label>
+                    {{ form.payment_method }}
+                </div>
+                <div>
+                    <label>{{ form.location.label }}</label>
+                    {{ form.location }}
+                </div>
+                <div>
+                    <label>{{ form.upi_pin.label }}</label>
+                    {{ form.upi_pin }}
+                    <div style="font-size:0.85rem; color:var(--text-light); margin-top:0.4rem;">Enter your 4-digit TruPay PIN to confirm this payment.</div>
+                </div>
+                <div style="display:flex; align-items:end;">
+                    <label style="display:flex; align-items:center; gap:0.65rem; font-weight:600; margin-bottom:1rem;">
+                        {{ form.is_new_device }}
+                        New device or browser
+                    </label>
+                </div>
+            </div>
+
+            <div class="soft-panel" style="margin-top:0.25rem;">
+                <label style="display:flex; align-items:flex-start; gap:0.75rem; font-weight:700; margin:0;">
+                    {{ form.enable_roundup }}
+                    <span>
+                        <span id="roundup-copy">Round this payment up and save the difference.</span>
+                        <span id="roundup-hint" style="display:block; font-weight:400; color:var(--text-light); margin-top:0.3rem;">TruPay will calculate the exact amount to the next Rs.10.</span>
+                    </span>
+                </label>
+                <div id="roundup-config" style="display:none; margin-top:1rem;">
+                    <div style="display:grid; grid-template-columns:minmax(0, 220px) minmax(0, 1fr); gap:1rem;">
+                        <div>
+                            <label>{{ form.roundup_destination.label|default:"Save into" }}</label>
+                            {{ form.roundup_destination }}
+                        </div>
+                        <div id="roundup-goal-wrapper" style="display:none;">
+                            <label>Choose Piggy Bank</label>
+                            {{ form.roundup_goal }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {% if form.errors %}
+                <div class="alert">{{ form.errors }}</div>
+            {% endif %}
+
+            <div id="adaptive-risk-panel" class="soft-panel" style="margin-top:1.25rem; display:flex; flex-direction:column; gap:0.9rem;">
+                <div id="risk-status-line" style="display:flex; align-items:center; gap:0.8rem; flex-wrap:wrap;">
+                    <span id="risk-dot" style="width:14px; height:14px; border-radius:50%; background:#c4ced8; box-shadow:0 0 0 6px rgba(196,206,216,0.18);"></span>
+                    <div>
+                        <strong id="risk-title">Waiting for payment details</strong>
+                        <div id="risk-subtitle" style="color:var(--text-light); font-size:0.92rem;">Complete the payment details to get a live trust score and payment guidance.</div>
+                    </div>
+                </div>
+                <div id="risk-details" style="display:none;"></div>
+            </div>
+
+            <div style="display:flex; gap:0.75rem; flex-wrap:wrap; margin-top:1.25rem;">
+                <button type="submit" class="btn" id="pay-btn">Pay Now</button>
+                <a href="{% url 'send_money' %}" class="btn btn-outline">Reset Form</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+{{ risk_result|json_script:"initial-risk-data" }}
+
+<script>
+    const paymentForm = document.getElementById('payment-form');
+    const payButton = document.getElementById('pay-btn');
+    const riskAcknowledgedInput = document.getElementById('risk_acknowledged');
+    const riskDot = document.getElementById('risk-dot');
+    const riskTitle = document.getElementById('risk-title');
+    const riskSubtitle = document.getElementById('risk-subtitle');
+    const riskDetails = document.getElementById('risk-details');
+    const initialRiskData = document.getElementById('initial-risk-data');
+    const roundupToggle = paymentForm.querySelector('[name="enable_roundup"]');
+    const roundupDestination = paymentForm.querySelector('[name="roundup_destination"]');
+    const roundupConfig = document.getElementById('roundup-config');
+    const roundupGoalWrapper = document.getElementById('roundup-goal-wrapper');
+    const roundupCopy = document.getElementById('roundup-copy');
+    const roundupHint = document.getElementById('roundup-hint');
+    let analyzeTimer = null;
+
+    function hasEnoughData() {
+        const receiver = paymentForm.querySelector('[name="receiver_username"]').value.trim();
+        const amount = paymentForm.querySelector('[name="amount"]').value.trim();
+        const merchant = paymentForm.querySelector('[name="merchant_category"]').value;
+        const method = paymentForm.querySelector('[name="payment_method"]').value;
+        const location = paymentForm.querySelector('[name="location"]').value;
+        return receiver && amount && merchant && method && location;
+    }
+
+    function setNeutralState(message = 'Complete the payment details to get a live trust score and payment guidance.') {
+        riskAcknowledgedInput.value = '';
+        payButton.disabled = false;
+        payButton.textContent = 'Pay Now';
+        riskDot.style.background = '#c4ced8';
+        riskDot.style.boxShadow = '0 0 0 6px rgba(196,206,216,0.18)';
+        riskTitle.textContent = 'Waiting for payment details';
+        riskSubtitle.textContent = message;
+        riskDetails.style.display = 'none';
+        riskDetails.innerHTML = '';
+    }
+
+    function roundupDifference() {
+        const rawAmount = paymentForm.querySelector('[name="amount"]').value.trim();
+        const amount = Number.parseFloat(rawAmount || '0');
+        if (!Number.isFinite(amount) || amount <= 0) return 0;
+        const roundedTarget = Math.ceil(amount / 10) * 10;
+        const diff = Number((roundedTarget - amount).toFixed(2));
+        return diff === 10 ? 0 : diff;
+    }
+
+    function updateRoundupUI() {
+        const enabled = Boolean(roundupToggle && roundupToggle.checked);
+        const diff = roundupDifference();
+        if (roundupConfig) {
+            roundupConfig.style.display = enabled && diff > 0 ? 'block' : 'none';
+        }
+        if (roundupGoalWrapper && roundupDestination) {
+            roundupGoalWrapper.style.display = enabled && diff > 0 && roundupDestination.value === 'goal' ? 'block' : 'none';
+        }
+        if (roundupCopy) {
+            roundupCopy.textContent = diff > 0
+                ? `Add Rs.${diff.toFixed(2)} to smart savings or a Piggy Bank by rounding this payment up.`
+                : 'This amount is already on a clean Rs.10 boundary, so there is nothing extra to save.';
+        }
+        if (roundupHint) {
+            roundupHint.textContent = diff > 0
+                ? `Example: pay now, and save Rs.${diff.toFixed(2)} separately in the same step.`
+                : 'Try a non-round amount like Rs.57 to see the roundup option.';
+        }
+    }
+
+    function renderRiskState(data) {
+        const colors = {
+            Low: '#159570',
+            Medium: '#cc8a1d',
+            High: '#d5484d',
+        };
+        const color = colors[data.risk_level] || '#c4ced8';
+        riskDot.style.background = color;
+        riskDot.style.boxShadow = `0 0 0 6px ${color}22`;
+        riskSubtitle.textContent = `Trust score ${data.trust_score}/100 | ${data.model_label || 'Trust engine'}`;
+
+        if (data.risk_level === 'Low') {
+            riskAcknowledgedInput.value = '';
+            payButton.disabled = false;
+            payButton.textContent = 'Pay Now';
+            riskTitle.textContent = 'High trust: ready to pay';
+            riskDetails.style.display = 'none';
+            riskDetails.innerHTML = '';
+            return;
+        }
+
+        const explanations = (data.explanations || []).map(item => `<li>${item}</li>`).join('');
+
+        if (data.risk_level === 'Medium') {
+            riskAcknowledgedInput.value = '';
+            payButton.disabled = false;
+            payButton.textContent = 'Pay Now';
+            riskTitle.textContent = 'Moderate trust: quick review recommended';
+            riskDetails.style.display = 'block';
+            riskDetails.innerHTML = `
+                <div class="mini-risk mini-risk-medium">
+                    <strong style="display:block; margin-bottom:0.5rem;">Why the trust score is lower</strong>
+                    <ul style="margin:0 0 0.75rem 1rem; color:var(--text-light);">${explanations}</ul>
+                    <div style="color:var(--text-light);"><strong>Recommendation:</strong> ${data.advisory}</div>
+                </div>
+            `;
+            return;
+        }
+
+        riskTitle.textContent = 'Low trust: confirm before paying';
+        payButton.textContent = 'Confirm Payment';
+        riskDetails.style.display = 'block';
+        riskDetails.innerHTML = `
+            <div class="mini-risk mini-risk-high">
+                <strong style="display:block; margin-bottom:0.5rem;">This transfer needs a stronger confirmation step</strong>
+                <ul style="margin:0 0 0.75rem 1rem; color:var(--text-light);">${explanations}</ul>
+                <div style="color:var(--text-light); margin-bottom:0.85rem;"><strong>Recommendation:</strong> ${data.advisory}</div>
+                <label style="display:flex; align-items:flex-start; gap:0.65rem; font-weight:600;">
+                    <input type="checkbox" id="high-risk-confirm">
+                    <span>I understand this payment has a low trust score and still want to continue.</span>
+                </label>
+            </div>
+        `;
+        const confirmInput = document.getElementById('high-risk-confirm');
+        if (confirmInput) {
+            confirmInput.checked = false;
+            const syncHighRiskConfirmation = () => {
+                const confirmed = Boolean(confirmInput.checked);
+                riskAcknowledgedInput.value = confirmed ? 'on' : '';
+                payButton.disabled = !confirmed;
+            };
+            confirmInput.addEventListener('change', syncHighRiskConfirmation);
+            syncHighRiskConfirmation();
+        } else {
+            payButton.disabled = true;
+        }
+    }
+
+    async function analyzeRisk() {
+        if (!hasEnoughData()) {
+            setNeutralState();
+            return;
+        }
+
+        const formData = new FormData(paymentForm);
+        formData.set('risk_acknowledged', '');
+        riskAcknowledgedInput.value = '';
+        riskTitle.textContent = 'Calculating payment trust';
+        riskSubtitle.textContent = 'TruPay is checking payment patterns, context, and budget impact.';
+        riskDetails.style.display = 'none';
+        riskDetails.innerHTML = '';
+        payButton.disabled = true;
+
+        try {
+            const response = await fetch("{% url 'analyze_payment' %}", {
+                method: 'POST',
+                body: formData,
+            });
+            const data = await response.json();
+            if (!response.ok || !data.success) {
+                setNeutralState(data.error || 'Complete the payment details to get a live trust score and payment guidance.');
+                return;
+            }
+            renderRiskState(data);
+        } catch (error) {
+            setNeutralState('Trust analysis could not be refreshed. You can edit the payment details and try again.');
+        }
+    }
+
+    function scheduleAnalysis() {
+        clearTimeout(analyzeTimer);
+        analyzeTimer = setTimeout(analyzeRisk, 350);
+    }
+
+    paymentForm.querySelectorAll('input, select').forEach((field) => {
+        field.addEventListener('input', scheduleAnalysis);
+        field.addEventListener('change', scheduleAnalysis);
+    });
+    if (roundupToggle) {
+        roundupToggle.addEventListener('change', updateRoundupUI);
+    }
+    if (roundupDestination) {
+        roundupDestination.addEventListener('change', updateRoundupUI);
+    }
+    const amountInput = paymentForm.querySelector('[name="amount"]');
+    if (amountInput) {
+        amountInput.addEventListener('input', updateRoundupUI);
+        amountInput.addEventListener('change', updateRoundupUI);
+    }
+
+    const initialRisk = initialRiskData && initialRiskData.textContent ? JSON.parse(initialRiskData.textContent) : null;
+    if (initialRisk) {
+        renderRiskState(initialRisk);
+    } else {
+        setNeutralState();
+    }
+    updateRoundupUI();
+</script>
+{% endblock %}

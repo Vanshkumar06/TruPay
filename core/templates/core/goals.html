@@ -1,0 +1,201 @@
+{% extends 'core/base.html' %}
+{% block content %}
+<div class="card" style="display:flex; justify-content:space-between; align-items:center; gap:1rem; flex-wrap:wrap;">
+    <div>
+        <div class="eyebrow">Savings Goals</div>
+        <h2 style="margin:0.35rem 0 0.75rem;">Manage your Piggy Banks</h2>
+        <p style="margin:0; color:var(--text-light); max-width:680px;">Track each goal, fund it directly, and choose what to save next time after a transfer.</p>
+    </div>
+    <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
+        <a href="{% url 'dashboard' %}" class="btn btn-outline">Dashboard</a>
+        <a href="{% url 'send_money' %}" class="btn">New Payment</a>
+        <button type="button" onclick="openModal('goalModal')" class="btn btn-outline">Create goal</button>
+    </div>
+</div>
+
+{% if incoming_invites %}
+<div class="card">
+    <div class="eyebrow">Shared goal invites</div>
+    <h3 style="margin:0.35rem 0 1rem;">Review invitations</h3>
+    {% for invite in incoming_invites %}
+        <div class="soft-panel" style="margin-bottom:0.75rem;">
+            <strong>{{ invite.goal.title }}</strong>
+            <div style="color:var(--text-light); font-size:0.92rem; margin-top:0.35rem;">Invited by {{ invite.invited_by.username }}</div>
+            <div style="display:flex; gap:0.5rem; margin-top:0.85rem; flex-wrap:wrap;">
+                <form action="{% url 'accept_goal_invite' invite.id %}" method="POST" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn">Accept</button>
+                </form>
+                <form action="{% url 'decline_goal_invite' invite.id %}" method="POST" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline">Decline</button>
+                </form>
+            </div>
+        </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% if pending_invites %}
+<div class="card">
+    <div class="eyebrow">Pending invites</div>
+    <h3 style="margin:0.35rem 0 1rem;">Invites waiting for a response</h3>
+    <div style="display:flex; flex-wrap:wrap; gap:0.75rem;">
+        {% for invite in pending_invites %}
+            <div class="soft-panel" style="min-width:180px; flex:1 1 220px; padding:0.9rem; display:flex; flex-direction:column; gap:0.5rem;">
+                <strong>{{ invite.invited_user.username }}</strong>
+                <div style="color:var(--text-light); font-size:0.88rem;">Invited to {{ invite.goal.title }}</div>
+                <div style="color:var(--text-light); font-size:0.82rem;">Sent by you on {{ invite.created_at|date:'M d, Y' }}</div>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<div style="display:grid; grid-template-columns:minmax(0, 1fr) minmax(320px, 0.9fr); gap:1.5rem;">
+    <div class="card">
+        <div class="eyebrow">Goal progress</div>
+        <h3 style="margin:0.35rem 0 1rem;">Your active savings goals</h3>
+        {% for item in goal_projection %}
+            <div class="soft-panel" style="margin-bottom:0.9rem;">
+                <div style="display:flex; justify-content:space-between; gap:1rem; align-items:center; flex-wrap:wrap;">
+                    <div>
+                        <strong>{{ item.goal.title }}</strong>
+                        <div style="color:var(--text-light); font-size:0.92rem;">Rs.{{ item.goal.saved_amount }} of Rs.{{ item.goal.target_amount }}</div>
+                    </div>
+                    <div style="text-align:right; min-width:120px;">
+                        <div style="font-size:1.2rem; font-weight:700;">{{ item.goal.progress_percentage }}%</div>
+                        <div style="color:var(--text-light); font-size:0.85rem;">Goal progress</div>
+                    </div>
+                </div>
+                <div style="display:flex; justify-content:space-between; gap:0.75rem; flex-wrap:wrap; margin-top:0.85rem; align-items:center;">
+                    <div style="color:var(--text-light); font-size:0.92rem;">
+                        {% if item.goal.user != request.user %}
+                            Owned by {{ item.goal.user.username }} ·
+                        {% endif %}
+                        Total contributions: Rs.{{ item.goal.contributions_total }}
+                    </div>
+                    <button type="button" class="btn btn-outline" onclick="toggleGoalDetails('goal-details-{{ item.goal.id }}')">Details</button>
+                </div>
+                {% if item.goal.user == request.user %}
+                    <form action="{% url 'invite_goal_contributor' item.goal.id %}" method="POST" style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-top:0.85rem;">
+                        {% csrf_token %}
+                        <input type="text" name="username" placeholder="Invite contributor username" class="form-control" style="flex:1 1 170px;" required>
+                        <button type="submit" class="btn btn-outline">Invite</button>
+                    </form>
+                {% endif %}
+                <form action="{% url 'fund_goal' item.goal.id %}" method="POST" style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-top:0.85rem;">
+                    {% csrf_token %}
+                    <input type="number" name="amount" placeholder="Add Rs." required class="form-control" style="margin:0; flex:1 1 140px;">
+                    <button type="submit" class="btn">Fund</button>
+                </form>
+                <div id="goal-details-{{ item.goal.id }}" style="display:none; margin-top:1rem;">
+                    {% if item.goal.target_date %}
+                        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:0.75rem; margin-bottom:0.9rem;">
+                            <div style="background:rgba(255,255,255,0.04); padding:0.9rem; border-radius:12px;">
+                                <div style="color:var(--text-light); font-size:0.82rem;">Target Date</div>
+                                <div style="font-weight:700;">{{ item.goal.target_date }}</div>
+                            </div>
+                            <div style="background:rgba(255,255,255,0.04); padding:0.9rem; border-radius:12px;">
+                                <div style="color:var(--text-light); font-size:0.82rem;">Needed/month</div>
+                                <div style="font-weight:700;">Rs.{{ item.goal.required_monthly_saving }}</div>
+                            </div>
+                            <div style="background:rgba(255,255,255,0.04); padding:0.9rem; border-radius:12px;">
+                                <div style="color:var(--text-light); font-size:0.82rem;">Time left</div>
+                                <div style="font-weight:700;">{{ item.months_to_goal }} month{{ item.months_to_goal|pluralize }}</div>
+                            </div>
+                        </div>
+                    {% endif %}
+                    <div style="display:grid; grid-template-columns:1fr; gap:0.75rem; margin-bottom:0.9rem;">
+                        <div style="background:rgba(255,255,255,0.04); padding:0.9rem; border-radius:12px;">
+                            <div style="color:var(--text-light); font-size:0.82rem;">Projected completion</div>
+                            {% if item.goal.remaining_amount <= 0 %}
+                                <div style="font-weight:700;">Already completed</div>
+                            {% elif item.goal.predicted_completion_date %}
+                                <div style="font-weight:700;">{{ item.goal.predicted_completion_date }}</div>
+                            {% else %}
+                                <div style="font-weight:700; color:var(--text-light);">Need more savings history to forecast</div>
+                            {% endif %}
+                        </div>
+                        <div style="display:grid; grid-template-columns:160px minmax(180px, 1fr); gap:1rem; align-items:center; padding:0.9rem; background:rgba(255,255,255,0.04); border-radius:12px;">
+                            <div style="width:160px; height:160px; border-radius:50%; background: {{ item.goal.contribution_pie_style }}; box-shadow: inset 0 0 0 2px rgba(255,255,255,0.08);"></div>
+                            <div style="display:grid; gap:0.65rem; width:100%;">
+                                {% for segment in item.goal.contribution_segments %}
+                                    <div style="display:flex; align-items:center; gap:0.75rem; padding:0.8rem; background:rgba(255,255,255,0.06); border-radius:12px; min-width:0;">
+                                        <span style="width:16px; height:16px; border-radius:4px; background: {{ segment.color }};"></span>
+                                        <div style="min-width:0;">
+                                            <div style="font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ segment.label }}</div>
+                                            <div style="color:var(--text-light); font-size:0.86rem;">Rs.{{ segment.amount }}</div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    {% if item.goal.user == request.user %}
+                        <form action="{% url 'break_goal' item.goal.id %}" method="POST" style="margin-top:0.55rem;" onsubmit="return confirm('Break this Piggy Bank and move the money back to your wallet?');">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger" style="width:100%;">Break this Piggy Bank</button>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+        {% empty %}
+            <p style="color:var(--text-light);">No savings goals created yet. Use the button above to add one.</p>
+        {% endfor %}
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:1.5rem;">
+        <div class="card">
+            <div class="eyebrow">Budget snapshot</div>
+            <h3 style="margin:0.35rem 0 1rem;">Current cycle summary</h3>
+            <p style="margin:0; color:var(--text-light);">Budget remaining: <strong>Rs.{{ profile.budget_remaining }}</strong></p>
+            <p style="margin:0.45rem 0 0; color:var(--text-light);">Savings reserve: <strong>Rs.{{ profile.savings_balance }}</strong></p>
+            <p style="margin:0.45rem 0 0; color:var(--text-light);">Cycle resets in {{ profile.budget_cycle_days_left }} day{{ profile.budget_cycle_days_left|pluralize }}.</p>
+        </div>
+
+        <div class="card">
+            <div class="eyebrow">Surplus control</div>
+            <h3 style="margin:0.35rem 0 0.75rem;">Where unused budget goes</h3>
+            <form action="{% url 'allocate_surplus' %}" method="POST">
+                {% csrf_token %}
+                {{ surplus_form.amount }}
+                {{ surplus_form.action }}
+                <button type="submit" class="btn" style="width:100%;">Allocate surplus</button>
+            </form>
+            {% if profile.borrowed_from_next_cycle > 0 %}
+                <div class="soft-panel" style="margin-top:1rem;">Current future borrowing: Rs.{{ profile.borrowed_from_next_cycle }}</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div id="goalModal" class="modal">
+    <div class="modal-content">
+        <h3 style="margin-top:0;">Create a Savings Goal</h3>
+        <form action="{% url 'create_goal' %}" method="POST">
+            {% csrf_token %}
+            <input type="text" name="title" class="form-control" placeholder="Goal name (e.g. Emergency Fund)" required>
+            <input type="number" name="target_amount" class="form-control" placeholder="Target amount (Rs.)" required>
+            <input type="date" name="target_date" class="form-control">
+            <select name="priority" class="form-control">
+                <option value="high">High Priority</option>
+                <option value="medium" selected>Medium Priority</option>
+                <option value="low">Low Priority</option>
+            </select>
+            <button type="submit" class="btn" style="width:100%; margin-bottom:0.5rem;">Create</button>
+            <button type="button" onclick="closeModal('goalModal')" class="btn btn-outline" style="width:100%;">Cancel</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+    function toggleGoalDetails(id) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.style.display = el.style.display === 'none' ? 'block' : 'none';
+    }
+</script>
+{% endblock %}

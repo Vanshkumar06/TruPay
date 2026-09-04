@@ -1,0 +1,35 @@
+{% extends 'core/base.html' %}
+{% block content %}
+<div class="card">
+    <div class="eyebrow">Transparency</div>
+    <h2 style="margin:0.35rem 0 1rem;">How TruPay uses your data</h2>
+    <div style="display:grid; gap:1rem;">
+        {% for item in transparency_items %}
+            <div class="soft-panel" style="margin:0;">
+                <strong>{{ item.title }}</strong>
+                <div style="margin-top:0.5rem; color:var(--text-light);">{{ item.description }}</div>
+                <div style="margin-top:0.5rem; color:var(--accent); font-size:0.9rem;">Purpose: {{ item.purpose }}</div>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="card">
+    <div class="eyebrow">Decision Examples</div>
+    <h3 style="margin:0.35rem 0 1rem;">Recent logged decisions</h3>
+    {% for tx in transactions %}
+        <div class="activity-row">
+            <div>
+                <strong>{% if tx.sender == user %}Sent to {{ tx.counterparty_name }}{% else %}Received from {{ tx.sender.username }}{% endif %}</strong>
+                <div style="margin-top:0.35rem; color:var(--text-light);">{{ tx.explanations|join:" | " }}</div>
+            </div>
+            <div style="text-align:right;">
+                <div class="trust-badge trust-{{ tx.risk_level|lower }}">{{ tx.risk_level }}</div>
+                <div style="margin-top:0.35rem; color:var(--text-light);">Trust {{ tx.trust_score }}/100</div>
+            </div>
+        </div>
+    {% empty %}
+        <p style="color:var(--text-light);">No decisions logged yet.</p>
+    {% endfor %}
+</div>
+{% endblock %}

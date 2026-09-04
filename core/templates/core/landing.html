@@ -1,0 +1,52 @@
+{% extends 'core/base.html' %}
+{% block content %}
+<div class="card" style="background:linear-gradient(135deg, #112033 0%, #0f9d8a 100%); color:white; overflow:hidden;">
+    <div style="display:grid; grid-template-columns:minmax(0, 1.15fr) minmax(280px, 0.85fr); gap:1.5rem; align-items:center;">
+        <div>
+            <div class="eyebrow" style="color:rgba(255,255,255,0.75);">TruPay UPI Sandbox</div>
+            <h1 style="font-size:3rem; line-height:1.05; margin:0.5rem 0 1rem;">Secure UPI-style transfers with savings guidance.</h1>
+            <p style="font-size:1.05rem; line-height:1.7; color:rgba(255,255,255,0.84); max-width:700px;">TruPay helps you complete AI-assisted payments with safety checks, budget visibility, and a simple option to save toward your goals.</p>
+            <div style="display:flex; gap:0.85rem; flex-wrap:wrap; margin-top:1.25rem;">
+                <a href="{% url 'login' %}" class="btn" style="background:white; color:var(--primary);">Sign In</a>
+                <a href="{% url 'signup' %}" class="btn btn-outline" style="border-color:white; color:white;">Create Account</a>
+            </div>
+        </div>
+        <div class="soft-panel" style="background:rgba(255,255,255,0.12); border-color:rgba(255,255,255,0.18); color:white; margin:0;">
+            <div class="eyebrow" style="color:rgba(255,255,255,0.75);">Get started quickly</div>
+            <h3 style="margin:0.4rem 0 0.8rem;">Fast login for testing</h3>
+            <p style="margin:0; color:rgba(255,255,255,0.78); font-size:0.95rem; line-height:1.6;">Use a valid account to sign in and explore the transfer flow, savings goals, and transaction history.</p>
+        </div>
+    </div>
+</div>
+
+<div style="display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:1rem; margin-bottom:1.5rem;">
+    {% for card in feature_cards %}
+        <div class="card" style="margin-bottom:0;">
+            <div class="eyebrow">{{ card.title }}</div>
+            <p style="margin:0.75rem 0 0; color:var(--text-light); line-height:1.7;">{{ card.description }}</p>
+        </div>
+    {% endfor %}
+</div>
+
+<div style="display:grid; grid-template-columns:minmax(0, 1fr) minmax(300px, 0.85fr); gap:1.5rem;">
+    <div class="card">
+        <div class="eyebrow">What Makes TruPay Different</div>
+        <h2 style="margin:0.35rem 0 1rem;">Not just fraud detection</h2>
+        <div style="display:grid; gap:0.8rem;">
+            <div class="soft-panel" style="margin:0;">Pre-transaction risk analysis instead of after-the-fact flagging.</div>
+            <div class="soft-panel" style="margin:0;">Plain-language explanations for every payment decision.</div>
+            <div class="soft-panel" style="margin:0;">Budget borrowing, smart savings, and goal-tracking built into the payment decision.</div>
+            <div class="soft-panel" style="margin:0;">Transparency dashboard plus audit log for trust and traceability.</div>
+        </div>
+    </div>
+    <div class="card">
+        <div class="eyebrow">Live endpoints</div>
+        <h3 style="margin:0.35rem 0 1rem;">Inspect app state</h3>
+        <div class="soft-panel" style="margin:0;">
+            <div><strong>Application overview:</strong> <code>/api/demo/overview/</code></div>
+            <div style="margin-top:0.55rem;"><strong>User summary:</strong> <code>/api/me/summary/</code></div>
+            <div style="margin-top:0.55rem; color:var(--text-light);">These JSON endpoints help verify the transfer and goal status during testing.</div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,30 @@
+{% extends 'core/base.html' %}
+{% block body_class %}login-page{% endblock %}
+{% block content %}
+<div class="card">
+    <div class="eyebrow">Two-Factor Verification</div>
+    <h2 style="margin:0.35rem 0 1rem; text-align:center;">Confirm your login</h2>
+    <p style="text-align:center; color:var(--text-light); margin-bottom:1.25rem;">Enter the 6-digit code from your authenticator app, or use one of your backup codes.</p>
+    <form method="post" action="{% url 'verify_2fa' %}">
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+            <div class="alert" style="background: #fee2e2; color: #991b1b; border-radius: 8px; padding: 1rem; margin-bottom: 1rem;">
+                {% for error in form.non_field_errors %}
+                    <div>{{ error }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+        
+        <div style="margin-bottom: 1.5rem;">
+            <label for="id_code" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--text-main);">Authenticator or backup code</label>
+            <input type="text" name="code" id="id_code" class="form-control" maxlength="12" autocomplete="off" required style="font-size: 16px; text-transform: uppercase;">
+            {% if form.code.errors %}
+                <div class="alert" style="background: #fee2e2; color: #991b1b; margin-top: 0.25rem; padding: 0.5rem; border-radius: 6px; font-size: 0.9rem;">
+                    {{ form.code.errors.0 }}
+                </div>
+            {% endif %}
+        </div>
+        
+        <button type="submit" class="btn" style="width:100%; font-size: 1rem; padding: 1rem; cursor: pointer;">Verify</button>
+    </form>
+{% endblock %}

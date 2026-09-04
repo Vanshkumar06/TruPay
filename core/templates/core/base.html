@@ -1,0 +1,241 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <meta name="theme-color" content="#0f9d8a">
+    <link rel="manifest" href="{% static 'manifest.webmanifest' %}">
+    <link rel="icon" type="image/svg+xml" href="{% static 'icons/icon.svg' %}">
+    <link rel="apple-touch-icon" href="{% static 'icons/icon.svg' %}">
+    <title>TruPay</title>
+    <style>
+        :root { --primary: #12263a; --accent: #0f9d8a; --accent-2: #f4b942; --bg-color: #f4f7f3; --surface: #ffffff; --text-main: #112033; --text-light: #5f6f82; --border: #d9e4dd; --success: #159570; --warning: #cc8a1d; --danger: #d5484d; --sidebar-w: 250px;}
+        body { font-family: "Segoe UI", Tahoma, sans-serif; background: radial-gradient(circle at top, #fcfff5 0%, var(--bg-color) 52%, #edf2ec 100%); color: var(--text-main); margin: 0; padding: 0; }
+        body.dark-mode { background: #0b1220; color: #e2e8f0; }
+        body.dark-mode .main-content { background: transparent; }
+        body.dark-mode .card { background: #111827; border-color: rgba(148,163,184,0.15); box-shadow: 0 16px 40px rgba(0,0,0,0.35); }
+        body.dark-mode .navbar { background: #08111f; }
+        body.dark-mode .nav-item { color: rgba(226,232,240,0.88); }
+        body.dark-mode .nav-item:hover, body.dark-mode .nav-item.active { background: rgba(255,255,255,0.08); color: #ffffff; }
+        body.dark-mode .btn { background-color: #0f9d8a; color: #ffffff; }
+        body.dark-mode .btn-outline { color: #a5f3fc; border-color: #38bdf8; }
+        body.dark-mode .btn-outline:hover { background: rgba(56,189,248,0.12); }
+        body.dark-mode .form-control { background: #0f172a; border-color: #334155; color: #e2e8f0; }
+        body.dark-mode .form-control::placeholder { color: #94a3b8; }
+        body.dark-mode .alert { background: #1f2937; color: #e2e8f0; border-color: #334155; }
+        body.dark-mode .soft-panel { background: #111827; border-color: #334155; }
+        body.dark-mode #preview-output { background: #111827; border-color: #334155; color: #e2e8f0; }
+        
+        body.login-page .top-header { display: none; }
+        body.login-page .navbar { display: none; }
+        body.login-page .card { max-width: 520px; width: 100%; margin: 0 auto; pointer-events: auto; }
+        body.login-page .card form { pointer-events: auto; }
+        body.login-page .card button { pointer-events: auto; touch-action: manipulation; }
+        body.login-page .card h2 { font-size: 1.8rem; }
+        body.login-page .card p { margin-bottom: 1.5rem; }
+
+        /* Sidebar Styling */
+        .navbar { background: linear-gradient(180deg, #112033 0%, #18344c 100%); border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; padding: 1rem 2rem; gap: 2rem; }
+        .brand-link { display: inline-flex; align-items: center; gap: 0.8rem; text-decoration: none; flex-shrink: 0; }
+        .brand-logo { width: 48px; height: 48px; object-fit: contain; display: block; filter: drop-shadow(0 12px 24px rgba(20, 126, 196, 0.28)); }
+        .brand-wordmark { display: flex; flex-direction: column; gap: 0.1rem; }
+        .brand-wordmark strong { color: #f3fbf8; font-size: 1.5rem; line-height: 1; letter-spacing: -0.03em; }
+        .brand-wordmark span { color: rgba(235,244,248,0.7); font-size: 0.76rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; }
+        .top-brand .brand-wordmark strong { color: var(--primary); }
+        .top-brand .brand-wordmark span { color: var(--text-light); }
+        .auth-brand { display: flex; justify-content: center; margin-bottom: 1.1rem; }
+        .auth-brand .brand-link { gap: 0.95rem; }
+        .auth-brand .brand-logo { width: 66px; height: 66px; }
+        .auth-brand .brand-wordmark strong { color: var(--primary); font-size: 2rem; }
+        .auth-brand .brand-wordmark span { color: var(--text-light); }
+        .navbar .nav-links { display: flex; gap: 1.5rem; flex: 1; }
+        .navbar .nav-item { color: rgba(235,244,248,0.74); text-decoration: none; font-weight: 600; transition: 0.2s; padding: 0.5rem 1rem; border-radius: 8px; }
+        .navbar .nav-item:hover, .navbar .nav-item.active { background: rgba(255,255,255,0.08); color: #ffffff; }
+        .navbar .user-section { margin-left: auto; display: flex; align-items: center; gap: 1rem; }
+        .navbar .user-info { text-align: right; }
+        .navbar .user-info .username { font-weight: 600; color: #f3fbf8; }
+        .navbar .user-info .upi-id { font-size: 0.8rem; color: rgba(235,244,248,0.6); }
+        .navbar .user-avatar { width: 40px; height: 40px; background: var(--primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+        .navbar .profile-link { display: inline-flex; align-items: center; gap: 0.65rem; padding: 0.4rem 0.75rem; border-radius: 999px; text-decoration: none; background: rgba(255,255,255,0.08); }
+        
+        /* Main Content */
+        .main-content { padding: 2rem; }
+        .top-header { display: flex; justify-content: flex-end; align-items: center; margin-bottom: 2rem; }
+        .top-header { display: flex; justify-content: flex-end; align-items: center; margin-bottom: 2rem; }
+        .responsive-grid { display: grid; gap: 1rem; }
+        .responsive-cols-2 { grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.95fr); }
+        .responsive-cols-3 { grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.6fr) minmax(0, 0.8fr) minmax(0, 0.8fr); }
+        .responsive-transfer { grid-template-columns: minmax(0, 1.3fr) minmax(280px, 0.7fr); }
+        @media (max-width: 900px) {
+            .navbar { flex-direction: column; align-items: flex-start; gap: 0.75rem; }
+            .navbar .nav-links { width: 100%; justify-content: center; flex-wrap: wrap; gap: 0.75rem; margin-top: 0.75rem; }
+            .navbar .user-section { width: 100%; justify-content: space-between; }
+            .main-content { padding: 1rem; }
+            .card { padding: 1.25rem; }
+            .responsive-cols-2,
+            .responsive-cols-3,
+            .responsive-transfer { grid-template-columns: 1fr; }
+            .activity-row { flex-direction: column; align-items: stretch; }
+            .activity-row > div:last-child { text-align: left; margin-top: 0.75rem; }
+            .navbar .nav-item { padding: 0.5rem 0.75rem; }
+        }
+        @media (max-width: 580px) {
+            .navbar { padding: 0.75rem; }
+            .navbar .user-info .username { font-size: 0.95rem; }
+            .navbar .user-info .upi-id { font-size: 0.75rem; }
+            .btn { width: 100%; }
+            .btn-outline { width: 100%; }
+            .brand-logo { width: 42px; height: 42px; }
+            .brand-wordmark strong { font-size: 1.3rem; }
+            .auth-brand .brand-logo { width: 56px; height: 56px; }
+            .auth-brand .brand-wordmark strong { font-size: 1.7rem; }
+        }
+        
+        /* Components */
+        .card { background: var(--surface); border-radius: 22px; padding: 1.5rem; box-shadow: 0 16px 40px rgba(17,32,51,0.06); border: 1px solid rgba(217,228,221,0.85); margin-bottom: 1.5rem; }
+        .btn { background-color: var(--accent); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 10px; font-weight: 600; cursor: pointer; display: inline-block; text-align: center; box-sizing: border-box; transition: 0.2s; text-decoration: none; pointer-events: auto; touch-action: manipulation; -webkit-tap-highlight-color: rgba(0,0,0,0.1); }
+        .btn-outline { background-color: transparent; color: var(--accent); border: 2px solid var(--accent); }
+        .btn-danger { background-color: #fee2e2; color: var(--danger); border: none; }
+        .btn:hover { opacity: 0.9; }
+        
+        .form-control { width: 100%; padding: 0.8rem; border: 1px solid var(--border); border-radius: 8px; box-sizing: border-box; margin-bottom: 1rem;}
+        .alert { padding: 1rem; border-radius: 12px; margin-bottom: 1rem; background: #fee2e2; color: #991b1b; font-size: 0.9rem;}
+        .alert.success { background: #dcfce3; color: #166534; }
+        
+        /* Modals */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; }
+        .modal-content { background: white; padding: 2rem; border-radius: 16px; width: 90%; max-width: 400px; text-align: center; margin: auto; animation: slideUp 0.3s; }
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        
+        /* Progress */
+        .progress-bg { background: var(--border); border-radius: 10px; height: 8px; width: 100%; overflow: hidden; margin: 10px 0; }
+        .progress-fill { background: var(--accent); height: 100%; transition: width 0.5s; }
+        .eyebrow { text-transform: uppercase; letter-spacing: 0.14em; font-size: 0.74rem; font-weight: 700; color: var(--text-light); }
+        .soft-panel { background: #f7fbf8; border: 1px solid var(--border); border-radius: 16px; padding: 1rem; margin-top: 1rem; }
+        .trust-badge { padding: 0.45rem 0.8rem; border-radius: 999px; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
+        .trust-low { background: #def7ee; color: var(--success); }
+        .trust-medium { background: #fff3db; color: var(--warning); }
+        .trust-high { background: #fde4e4; color: var(--danger); }
+        .risk-panel { border-radius: 18px; padding: 1.2rem; margin-top: 1.25rem; border: 1px solid transparent; }
+        .risk-low { background: #effaf5; border-color: #b7e6d3; }
+        .risk-medium { background: #fff8eb; border-color: #f4d69a; }
+        .risk-high { background: #fff0f1; border-color: #efb9bc; }
+        .mini-risk { border-radius: 16px; padding: 0.95rem 1rem; font-size: 0.94rem; }
+        .mini-risk-low { background: #effaf5; }
+        .mini-risk-medium { background: #fff8eb; }
+        .mini-risk-high { background: #fff0f1; }
+        .trust-gradient { background: linear-gradient(135deg, #173553 0%, #0f9d8a 100%); }
+        .activity-row { display:flex; justify-content:space-between; gap:1rem; padding:1rem 0; border-bottom:1px solid #edf2ec; }
+        .mini-tag { display:inline-flex; align-items:center; padding:0.2rem 0.55rem; border-radius:999px; background:#eef4f1; color:var(--text-light); font-size:0.78rem; }
+        .trust-checkbox { width: 18px; height: 18px; margin: 0; }
+        @media (max-width: 980px) {
+            .navbar { padding: 1rem; flex-wrap: wrap; }
+            .navbar .nav-links { order: 3; width: 100%; justify-content: center; margin-top: 1rem; }
+            .main-content { padding:1.25rem; }
+        }
+    </style>
+</head>
+<body class="{% block body_class %}{% endblock %}">
+    {% if user.is_authenticated %}
+    <div class="navbar">
+        <a href="{% url 'dashboard' %}" class="brand-link" aria-label="TruPay home">
+            <img src="{% static 'icons/trupay-logo.png' %}" alt="TruPay logo" class="brand-logo">
+            <span class="brand-wordmark">
+                <strong>TruPay</strong>
+                <span>Trusted UPI Sandbox</span>
+            </span>
+        </a>
+        <div class="nav-links">
+            <a href="{% url 'dashboard' %}" class="nav-item">Dashboard</a>
+            <a href="{% url 'send_money' %}" class="nav-item">Transfer</a>
+            <a href="{% url 'analytics' %}" class="nav-item">Insights</a>
+            <a href="{% url 'goals' %}" class="nav-item">Goals</a>
+            <a href="{% url 'transparency' %}" class="nav-item">Transparency</a>
+            <a href="{% url 'audit_log' %}" class="nav-item">Activity Log</a>
+        </div>
+        <div class="user-section">
+            <a href="{% url 'profile' %}" class="profile-link">
+                <div class="user-info">
+                    <div class="username">Profile</div>
+                    <div class="upi-id">{{ user.username }} | {{ user.profile.upi_id }}</div>
+                </div>
+                <div class="user-avatar">{{ user.username|first|upper }}</div>
+            </a>
+            <button id="theme-toggle" class="btn btn-outline" style="width: 36px; height: 36px; padding: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; line-height: 1; margin: 0;" title="Toggle theme">🌙</button>
+            <form action="{% url 'logout' %}" method="post" style="margin-left: 1rem;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-outline" style="padding: 0.5rem 1rem;">Log Out</button>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+    
+    <div class="main-content">
+        {% block top_header %}
+            {% if not user.is_authenticated %}
+            <div class="top-header" style="justify-content:space-between;">
+                <a href="{% url 'landing' %}" class="brand-link top-brand" aria-label="TruPay landing page">
+                    <img src="{% static 'icons/trupay-logo.png' %}" alt="TruPay logo" class="brand-logo">
+                    <span class="brand-wordmark">
+                        <strong>TruPay</strong>
+                        <span>Trusted UPI Sandbox</span>
+                    </span>
+                </a>
+                <div style="display:flex; gap:0.75rem;">
+                    <a href="{% url 'login' %}" class="btn btn-outline">Log In</a>
+                    <a href="{% url 'signup' %}" class="btn">Create Account</a>
+                </div>
+            </div>
+            {% endif %}
+        {% endblock %}
+        
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert {{ message.tags }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+        
+        {% block content %}{% endblock %}
+    </div>
+    <script>
+        const themeToggle = document.getElementById('theme-toggle');
+        const setTheme = (theme) => {
+            document.body.classList.toggle('dark-mode', theme === 'dark');
+            if (themeToggle) {
+                themeToggle.innerText = theme === 'dark' ? '☀️' : '🌙';
+            }
+        };
+        const savedTheme = localStorage.getItem('trupay_theme') || 'light';
+        setTheme(savedTheme);
+        if (themeToggle) {
+            themeToggle.addEventListener('click', () => {
+                const nextTheme = document.body.classList.contains('dark-mode') ? 'light' : 'dark';
+                localStorage.setItem('trupay_theme', nextTheme);
+                setTheme(nextTheme);
+            });
+        }
+
+        if ('serviceWorker' in navigator) {
+            {% if user.is_authenticated %}
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('{% static "js/sw.js" %}')
+                    .then(registration => {
+                        console.log('TruPay service worker registered:', registration.scope);
+                    })
+                    .catch(error => {
+                        console.warn('TruPay service worker registration failed:', error);
+                    });
+            });
+            {% else %}
+            navigator.serviceWorker.getRegistrations().then(registrations => {
+                registrations.forEach(registration => registration.unregister());
+            }).catch(() => {});
+            {% endif %}
+        }
+    </script>
+</body>
+</html>
